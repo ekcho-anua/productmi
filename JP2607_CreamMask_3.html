@@ -89,7 +89,9 @@ h1 { font: 400 32px/40px var(--font); margin: 0 0 6px; }
 .voc-item:last-child { border-bottom: none; }
 .voc-jp { font: 400 12px/18px var(--font); color: var(--on-surface-variant); }
 .voc-ko { font: 500 12px/18px var(--font); color: var(--on-surface); margin-top: 2px; }
-.voc-src { display:inline-block; font: 500 10px/14px var(--font); color: var(--primary); background: var(--primary-container); border-radius:9999px; padding:1px 8px; margin-right:6px; }
+.voc-src { display:inline-block; font: 500 10px/14px var(--font); border-radius:9999px; padding:1px 8px; margin-right:6px; }
+.voc-src.pos { color: var(--primary); background: var(--primary-container); }
+.voc-src.neg { color: var(--on-neg-container); background: var(--neg-container); }
 
 .satlist .kwrow:hover { background: var(--secondary-container); }
 
@@ -239,6 +241,8 @@ function renderSectorPage(){
 }
 
 let secCounter = 0;
+const sectorStore = {};
+const sectorShown = {};
 function renderSectorCard(sector){
   const d = DATA.bySector[sector];
   if(!d) return '';
@@ -247,15 +251,15 @@ function renderSectorCard(sector){
     const m = SAMPLE_META[s];
     const posN = d[s].pos.length, negN = d[s].neg.length;
     secCounter++;
-    const posId = `sec_${secCounter}_p`, negId = `sec_${secCounter}_n`;
+    const id = `sec_${secCounter}`;
+    sectorStore[id] = d[s];
     cols += `<div class="sector-col">
       <h4>${m.label} (${m.code})</h4>
       <div class="stat-row">
-        <div class="stat-chip pos" onclick="toggleDetail('${posId}')"><span class="num">${posN}</span>긍정</div>
-        <div class="stat-chip neg" onclick="toggleDetail('${negId}')"><span class="num">${negN}</span>부정</div>
+        <div class="stat-chip pos" onclick="toggleSectorDetail('${id}','pos')"><span class="num">${posN}</span>긍정</div>
+        <div class="stat-chip neg" onclick="toggleSectorDetail('${id}','neg')"><span class="num">${negN}</span>부정</div>
       </div>
-      <div class="sector-detail" id="${posId}">${renderSectorVoc(d[s].pos)}</div>
-      <div class="sector-detail" id="${negId}">${renderSectorVoc(d[s].neg)}</div>
+      <div class="sector-detail" id="detail_${id}"></div>
     </div>`;
   });
   return `<div class="sector-card">
@@ -265,9 +269,22 @@ function renderSectorCard(sector){
   </div>`;
 }
 
-function renderSectorVoc(items){
+function toggleSectorDetail(id, sentiment){
+  const el = document.getElementById('detail_'+id);
+  if(sectorShown[id] === sentiment){
+    el.classList.remove('open');
+    el.innerHTML = '';
+    sectorShown[id] = null;
+  } else {
+    el.innerHTML = renderSectorVoc(sectorStore[id][sentiment], sentiment);
+    el.classList.add('open');
+    sectorShown[id] = sentiment;
+  }
+}
+
+function renderSectorVoc(items, sentiment){
   if(!items.length) return `<div style="font:400 12px/18px var(--font); color:var(--outline);">해당 VOC 없음</div>`;
-  return items.map(ex=>`<div class="voc-item"><span class="voc-src">${ex.source}</span><div class="voc-jp">${ex.jp||''}</div><div class="voc-ko">${ex.ko||''}</div></div>`).join('');
+  return items.map(ex=>`<div class="voc-item"><span class="voc-src ${sentiment}">${ex.source}</span><div class="voc-jp">${ex.jp||''}</div><div class="voc-ko">${ex.ko||''}</div></div>`).join('');
 }
 
 renderApp();
